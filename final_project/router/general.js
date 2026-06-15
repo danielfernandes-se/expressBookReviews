@@ -54,20 +54,38 @@ public_users.get("/asyncbooks", async (req, res) => {
 public_users.get('/isbn/:isbn',function (req, res) {
   //Write your code here
   const isbn = req.params.isbn;
-  return res.json(books[isbn]);
+
+if (!books[isbn]) {
+  return res.status(404).json({
+    message: "Book not found"
+  });
+}
+
+return res.json(books[isbn]);
  });
   
 
  public_users.get("/asyncisbn/:isbn", async (req, res) => {
     try {
       const isbn = req.params.isbn;
+  
       const response = await axios.get(
         `http://localhost:5000/isbn/${isbn}`
       );
   
+      // If no book was found
+      if (!response.data) {
+        return res.status(404).json({
+          message: "Book not found"
+        });
+      }
+  
       return res.status(200).json(response.data);
+  
     } catch (err) {
-      return res.status(500).json({ message: err.message });
+      return res.status(500).json({
+        message: err.message
+      });
     }
   });
 
@@ -82,23 +100,29 @@ public_users.get('/author/:author', function (req, res) {
       .map(key => books[key])
       .filter(book => book.author === author);
   
-    return res.json(result);
+      if (result.length === 0) {
+        return res.status(404).json({
+          message: "No books found for the specified author"
+        });
+      }
+      
+      return res.json(result);
   
   });
 
-  public_users.get("/asyncauthor/:author", async (req, res) => {
+  public_users.get("/asyncauthor/:author", async (req, res) => { 
     try {
-      const author = req.params.author;
-  
-      const response = await axios.get(
-        `http://localhost:5000/author/${author}`
-      );
-  
-      return res.status(200).json(response.data);
-    } catch (err) {
-      return res.status(500).json({ message: err.message });
+        const author = req.params.author;
+        const response = await axios.get( `http://localhost:5000/author/${author}` );
+        if ( !response.data || (Array.isArray(response.data) && response.data.length === 0) ) {
+            return res.status(404).json({ message: "No books found for the specified author" });
+        }
+        return res.status(200).json(response.data);
     }
-  });
+    catch (err) {
+        return res.status(500).json({ message: err.message });
+    }
+    });
 
 
 // Get all books based on title
@@ -111,7 +135,13 @@ public_users.get('/title/:title', function (req, res) {
       .map(key => books[key])
       .filter(book => book.title === title);
   
-    return res.json(result);
+      if (result.length === 0) {
+        return res.status(404).json({
+          message: "No books found with the specified title"
+        });
+      }
+      
+      return res.json(result);
   
   });
 
@@ -123,9 +153,22 @@ public_users.get('/title/:title', function (req, res) {
         `http://localhost:5000/title/${title}`
       );
   
+      // If no books matched the title
+      if (
+        !response.data ||
+        (Array.isArray(response.data) && response.data.length === 0)
+      ) {
+        return res.status(404).json({
+          message: "No books found with the specified title"
+        });
+      }
+  
       return res.status(200).json(response.data);
+  
     } catch (err) {
-      return res.status(500).json({ message: err.message });
+      return res.status(500).json({
+        message: err.message
+      });
     }
   });
 
